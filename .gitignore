@@ -1,0 +1,29 @@
+# Model checkpoints (too large for GitHub)
+**/mentalbert_stress_model/
+**/mentalbert_stress_model_final/
+
+# Datasets
+**/dreaddit/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Zip archives
+*.zip
