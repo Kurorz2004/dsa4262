@@ -1,8 +1,9 @@
-# dsa4262
+# DSA4262 Project
 
-Group 8
+This project repository is for Group 8.
 
-Members (6):
+## Team Members
+This project has 6 members:
 - Ho Hoi Kay Robyn
 - Inaz Begum
 - Lim Zhi Chao
