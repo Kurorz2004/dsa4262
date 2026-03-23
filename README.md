@@ -46,7 +46,11 @@ dsa4262/
 - [Node.js](https://nodejs.org/) (v18+)
 
 
-### 1. Python Environment Setup
+### 1. Dataset Setup
+
+Download `cosowell_data.zip` and place it at the repository root (`dsa4262/cosowell_data.zip`).
+
+### 2. Python Environment Setup
 
 Install uv (fast Python package manager):
 
@@ -59,11 +63,11 @@ Create a `.venv` and install all Python dependencies from `pyproject.toml`:
 uv sync
 ```
 
-### 2. Environment Variables
+### 3. Environment Variables
 
 Paste the `.env` file in the project root (`dsa4262/.env`).
 
-### 3. Install Frontend Dependencies
+### 4. Install Frontend Dependencies
 
 ```bash
 # Elderly app
@@ -73,7 +77,7 @@ cd demo && npm install
 cd demo/admin && npm install
 ```
 
-### 4. Run the Demo
+### 5. Run the Demo
 
 Open three terminals:
 
@@ -89,16 +93,16 @@ cd demo/backend && uv run uvicorn main:app --reload --port 8000
 
 ```
 
-### 5. Demo Flow
+### 6. Demo Flow
 
 1. Open the elderly app at `http://localhost:5173` and complete the onboarding profile
 2. Fill in the wellness survey and write a journal entry
 3. Switch to the admin app at `http://localhost:5174`
 4. Click **Run Screening** to see flagged at-risk patients with confidence scores
 
-### 6. Model Training (Optional)
+### 7. Model Training (Optional)
 
-1. Place `cosowell_data.zip` at the project root
+1. Ensure `cosowell_data.zip` is at the project root (see step 1)
 2. Open `model/notebooks/combined.ipynb` in Jupyter
 3. Run all cells
 4. The final trained model exports to `model/artifacts/`
