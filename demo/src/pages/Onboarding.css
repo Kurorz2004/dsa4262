@@ -1,0 +1,56 @@
+.onboarding {
+  padding: 24px 16px 40px;
+}
+
+.onboarding h1 {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.onboarding-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.form-field select {
+  font-family: inherit;
+  font-size: 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: white;
+  color: var(--text);
+  appearance: none;
+}
+
+.form-field select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.error-text {
+  color: var(--danger);
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: 500;
+}

@@ -1,0 +1,79 @@
+.home-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.home-header h1 {
+  font-size: 2rem;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.home-header .date {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.home-header .greeting {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: left;
+  box-shadow: var(--shadow);
+  width: 100%;
+}
+
+.action-card:active {
+  background: var(--bg);
+}
+
+.action-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.survey-icon {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.journal-icon {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.history-icon {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.action-text h2 {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+
+.action-text p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
