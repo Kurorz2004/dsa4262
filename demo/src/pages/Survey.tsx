@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import type { SurveyQuestion } from '../types'
 import './Survey.css'
+
+const LANG_CODES: Record<string, string> = {
+  english: 'en-SG',
+  chinese: 'zh-CN',
+  malay: 'ms-MY',
+  tamil: 'ta-IN',
+}
 
 // Questions mapped to COSOWELL behavioural features used by the ML model.
 // These are the *recurring* check-in questions (not one-time profile fields).
@@ -142,8 +148,8 @@ const QUESTIONS: SurveyQuestion[] = [
     id: 'divulge_spouse',
     text: 'How often do you share personal matters with your spouse or partner?',
     type: 'select',
-    helperText: 'Select "Never" if not applicable',
     options: [
+      { label: 'N/A (no spouse or partner)', value: 'never' },
       { label: 'Never', value: 'never' },
       { label: 'Hardly ever', value: 'hardly_ever' },
       { label: 'Some of the time', value: 'some_of_the_time' },
@@ -154,8 +160,8 @@ const QUESTIONS: SurveyQuestion[] = [
     id: 'rely_spouse',
     text: 'How often can you rely on your spouse or partner for help?',
     type: 'select',
-    helperText: 'Select "Never" if not applicable',
     options: [
+      { label: 'N/A (no spouse or partner)', value: 'never' },
       { label: 'Never', value: 'never' },
       { label: 'Hardly ever', value: 'hardly_ever' },
       { label: 'Some of the time', value: 'some_of_the_time' },
@@ -170,6 +176,14 @@ export default function Survey() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const speak = useCallback((text: string) => {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    const userLang = localStorage.getItem('userLanguage') || 'english'
+    utterance.lang = LANG_CODES[userLang] || 'en-SG'
+    window.speechSynthesis.speak(utterance)
+  }, [])
 
   const question = QUESTIONS[currentQ]
   const progress = ((currentQ + (answers[question.id] !== undefined ? 1 : 0)) / QUESTIONS.length) * 100
@@ -204,7 +218,12 @@ export default function Survey() {
     }
 
     try {
-      await supabase.from('surveys').insert(row)
+      const res = await fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+      })
+      if (!res.ok) throw new Error('Failed to save survey')
       setSubmitted(true)
     } catch (err) {
       console.error('Failed to save survey:', err)
@@ -244,7 +263,21 @@ export default function Survey() {
       </div>
 
       <div className="question-card card">
-        <h2 className="question-text">{question.text}</h2>
+        <div className="question-row">
+          <h2 className="question-text">{question.text}</h2>
+          <button
+            className="listen-btn"
+            onClick={() => speak(question.text)}
+            type="button"
+            aria-label="Listen to question"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </button>
+        </div>
         {question.helperText && (
           <p className="helper-text">{question.helperText}</p>
         )}

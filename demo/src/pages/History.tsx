@@ -1,7 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { JournalEntry, SurveyResponse } from '../types'
 import './History.css'
+
+const LANG_CODES: Record<string, string> = {
+  english: 'en-SG',
+  chinese: 'zh-CN',
+  malay: 'ms-MY',
+  tamil: 'ta-IN',
+}
 
 type Tab = 'journal' | 'survey'
 
@@ -30,6 +37,14 @@ export default function History() {
   const [loading, setLoading] = useState(true)
 
   const userId = localStorage.getItem('userId') || ''
+
+  const speak = useCallback((text: string) => {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    const userLang = localStorage.getItem('userLanguage') || 'english'
+    utterance.lang = LANG_CODES[userLang] || 'en-SG'
+    window.speechSynthesis.speak(utterance)
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -119,6 +134,18 @@ export default function History() {
                   </div>
                 </div>
                 <p className="entry-content">{entry.content}</p>
+                <button
+                  className="listen-btn-small"
+                  onClick={() => speak(entry.content)}
+                  type="button"
+                  aria-label="Listen to entry"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  </svg>
+                  Listen
+                </button>
               </div>
             ))
           )}

@@ -1,0 +1,40 @@
+.login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.login h1 {
+  color: var(--primary);
+  font-size: 2rem;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.login-register {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.login-register a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}

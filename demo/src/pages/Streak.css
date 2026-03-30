@@ -1,0 +1,172 @@
+.streak {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.streak-summary {
+  text-align: center;
+  padding: 24px;
+}
+
+.streak-number {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.streak-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* Reward progress */
+.reward-section {
+  padding: 16px 20px;
+}
+
+.reward-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.reward-header h3 {
+  font-size: 1rem;
+}
+
+.reward-fraction {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.reward-bar {
+  position: relative;
+  height: 12px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: visible;
+  margin-bottom: 10px;
+}
+
+.reward-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.reward-fill.earned {
+  background: var(--success);
+}
+
+.reward-threshold {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 20px;
+  background: var(--text);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+.reward-info {
+  font-size: 0.85rem;
+}
+
+.reward-earned {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.reward-pending {
+  color: var(--text-secondary);
+}
+
+/* Calendar */
+.calendar {
+  padding: 16px;
+}
+
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cal-nav-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 50%;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+}
+
+.cal-month {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cal-day-label {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.cal-day.empty {
+  visibility: hidden;
+}
+
+.cal-day.active {
+  background: var(--success);
+  color: white;
+  font-weight: 600;
+}
+
+.cal-day.today {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.cal-day.today.active {
+  outline-color: white;
+  box-shadow: 0 0 0 2px var(--primary);
+}

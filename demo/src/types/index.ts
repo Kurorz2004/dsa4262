@@ -19,6 +19,7 @@ export interface UserProfile {
   residency?: string
   num_friends?: number
   num_household?: number
+  language?: string
 }
 
 // ---- Survey (recurring behavioural check-in) ----

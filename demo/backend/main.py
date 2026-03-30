@@ -1,5 +1,5 @@
 """
-FastAPI backend for MindWell loneliness screening.
+FastAPI backend for GoldHaven loneliness screening.
 
 Loads the trained RF model + scaler from model/artifacts/ and exposes
 an endpoint for the admin app to screen patients.
@@ -9,10 +9,10 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+import shap
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from supabase import create_client
 
@@ -32,9 +32,126 @@ model = joblib.load(os.path.join(ARTIFACTS_DIR, 'combined_rf_model.joblib'))
 scaler = joblib.load(os.path.join(ARTIFACTS_DIR, 'scaler.joblib'))
 feature_columns = joblib.load(os.path.join(ARTIFACTS_DIR, 'feature_columns.joblib'))
 
-st_model = SentenceTransformer('all-MiniLM-L6-v2')
+st_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 LABEL_MAP = {1: 'low', 2: 'moderate', 3: 'high'}
+
+# ---------------------------------------------------------------------------
+# SHAP explainer (computed once at startup)
+# ---------------------------------------------------------------------------
+explainer = shap.TreeExplainer(model)
+
+# Global feature importance from the trained model
+_global_importance = pd.Series(model.feature_importances_, index=feature_columns)
+# Exclude embedding features from the global ranking (not interpretable)
+_behav_importance = _global_importance[[c for c in feature_columns if not c.startswith('emb_')]]
+_behav_importance = _behav_importance.sort_values(ascending=False)
+
+# Readable names for one-hot encoded features
+def _readable_feature(name: str) -> str:
+    """Convert feature column names to human-readable labels.
+
+    One-hot encoded features look like 'rely_family_often', 'health_good', etc.
+    We map the full name to a specific, descriptive label.
+    """
+    # Exact matches for base numeric features
+    exact = {
+        'age': 'Age',
+        'years_education': 'Years of Education',
+        'num_friends': 'Number of Close Friends',
+        'num_household': 'Household Size',
+        'speak_habit': 'Speaking Habit (hrs/wk)',
+        'read_print_habit': 'Reading Print (hrs/wk)',
+        'read_web_habit': 'Reading Online (hrs/wk)',
+        'broadcast_habit': 'TV/Radio (hrs/wk)',
+    }
+    if name in exact:
+        return exact[name]
+
+    # Specific mappings for one-hot encoded features
+    specific = {
+        # Reliance — who and how often
+        'rely_family': 'Rely on Family',
+        'rely_friend': 'Rely on Friends',
+        'rely_spouse': 'Rely on Spouse',
+        'divulge_family': 'Share with Family',
+        'divulge_friend': 'Share with Friends',
+        'divulge_spouse': 'Share with Spouse',
+        # Social frequency
+        'social_meet_freq': 'Social Meetup Freq.',
+        'professional_meet_freq': 'Professional Meetup Freq.',
+        'volunteer_meet_freq': 'Volunteer Activity Freq.',
+        'talk_social_network': 'Social Media Use',
+        # Profile
+        'gender': 'Gender',
+        'education': 'Education',
+        'read_ability': 'Reading Ability',
+        'write_ability': 'Writing Ability',
+        'health': 'Health',
+        'living_arrangements': 'Living Arrangements',
+        'learning_disability': 'Learning Disability',
+        'retired': 'Retired',
+        'employed': 'Employed',
+        'volunteer': 'Volunteering',
+    }
+
+    # Match longest prefix first (e.g. 'rely_family' before 'rely')
+    for prefix in sorted(specific, key=len, reverse=True):
+        if name.startswith(prefix):
+            # Extract the value part after the prefix (e.g. 'often' from 'rely_family_often')
+            suffix = name[len(prefix):]
+            if suffix.startswith('_'):
+                suffix = suffix[1:]
+            base = specific[prefix]
+            if suffix:
+                val = suffix.replace('_', ' ')
+                return f"{base} = {val}"
+            return base
+
+    return name.replace('_', ' ').title()
+
+
+def _get_global_top_features(n: int = 10) -> list[dict]:
+    """Return top N global behavioural feature importances."""
+    top = _behav_importance.head(n)
+    result = []
+    for feat, imp in top.items():
+        label = _readable_feature(str(feat))
+        result.append({'feature': str(feat), 'label': label, 'importance': round(float(imp), 4)})
+    return result
+
+
+def _get_patient_shap(features: pd.DataFrame, predicted_class: int, n: int = 5) -> list[dict]:
+    """Return top N SHAP-based contributing features for a single patient's predicted class."""
+    sv = explainer.shap_values(features)
+
+    # Handle different shap return formats:
+    # - List of arrays (one per class): sv[class_idx][sample_idx]
+    # - Single 3D array: sv[sample_idx, feature_idx, class_idx]
+    if isinstance(sv, list):
+        class_shap = np.array(sv[predicted_class - 1]).flatten()
+    elif isinstance(sv, np.ndarray) and sv.ndim == 3:
+        class_shap = sv[0, :, predicted_class - 1]
+    else:
+        # Fallback: flatten whatever we get
+        class_shap = np.array(sv).flatten()
+
+    # Only consider behavioural features (not embeddings)
+    behav_indices = [i for i, c in enumerate(feature_columns) if not c.startswith('emb_')]
+    shap_pairs = [(feature_columns[i], class_shap[i]) for i in behav_indices]
+    # Sort by absolute SHAP value (most impactful first)
+    shap_pairs.sort(key=lambda x: abs(x[1]), reverse=True)
+
+    result = []
+    for feat, val in shap_pairs[:n]:
+        label = _readable_feature(feat)
+        result.append({
+            'feature': feat,
+            'label': label,
+            'shap_value': round(float(val), 4),
+            'direction': 'increases risk' if val > 0 else 'decreases risk',
+        })
+    return result
 
 # ---------------------------------------------------------------------------
 # Supabase client
@@ -44,7 +161,7 @@ sb = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title='MindWell Screening API')
+app = FastAPI(title='GoldHaven Screening API')
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,10 +180,14 @@ def build_feature_vector(patient: dict, survey: dict, narrative: str) -> pd.Data
     row = {}
     # Profile fields (must match training features — excludes dropped columns
     # like education2, age_education, confide_*, phase, country, state_province)
+    # NOTE: 'residency' is stored in DB but excluded from inference —
+    # the model was trained on urban/suburban/rural which doesn't align
+    # with the current Singapore region values. Will be re-included
+    # after retraining.
     for col in ['age', 'gender', 'education', 'years_education',
                 'read_ability', 'write_ability', 'retired', 'employed',
                 'volunteer', 'health', 'learning_disability',
-                'living_arrangements', 'residency', 'num_friends', 'num_household']:
+                'living_arrangements', 'num_friends', 'num_household']:
         row[col] = patient.get(col)
 
     # Survey fields
@@ -103,21 +224,6 @@ def build_feature_vector(patient: dict, survey: dict, narrative: str) -> pd.Data
     return combined
 
 
-class ScreenResult(BaseModel):
-    patient_id: str
-    patient_name: str
-    predicted_level: str
-    predicted_label: int
-    confidence: float
-    probabilities: dict
-
-
-class ScreenAllResponse(BaseModel):
-    results: list[ScreenResult]
-    screened: int
-    skipped: int
-
-
 @app.get('/patients')
 def list_patients():
     """List all patients."""
@@ -125,87 +231,129 @@ def list_patients():
     return res.data
 
 
-@app.post('/screen', response_model=ScreenAllResponse)
-def screen_all_patients():
+@app.get('/patients/{patient_id}/surveys')
+def get_patient_surveys(patient_id: str):
+    """Get all surveys for a specific patient, newest first."""
+    res = sb.table('surveys').select('*').eq('from_user_id', patient_id).order('created_at', desc=True).execute()
+    return res.data
+
+
+@app.get('/patients/{patient_id}/journals')
+def get_patient_journals(patient_id: str):
+    """Get all journal entries for a specific patient, newest first."""
+    res = sb.table('journal_entries').select('*').eq('from_user_id', patient_id).order('created_at', desc=True).execute()
+    return res.data
+
+
+@app.get('/patients/{patient_id}/details')
+def get_patient_details(patient_id: str):
+    """Get a single patient's full profile."""
+    res = sb.table('patients').select('*').eq('id', patient_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail='Patient not found')
+    return res.data[0]
+
+
+@app.get('/patients/lookup')
+def lookup_patient(name: str):
+    """Look up a patient by exact name (case-insensitive)."""
+    res = sb.table('patients').select('*').ilike('name', name.strip()).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail='No patient found with that name')
+    return res.data[0]
+
+
+@app.post('/patients')
+def create_patient(payload: dict):
+    """Create a new patient profile."""
+    res = sb.table('patients').insert(payload).execute()
+    if not res.data:
+        raise HTTPException(status_code=400, detail='Failed to create patient')
+    return res.data[0]
+
+
+@app.post('/surveys')
+def create_survey(payload: dict):
+    """Save a survey response."""
+    res = sb.table('surveys').insert(payload).execute()
+    if not res.data:
+        raise HTTPException(status_code=400, detail='Failed to save survey')
+    return res.data[0]
+
+
+@app.post('/journals')
+def create_journal(payload: dict):
+    """Save a journal entry."""
+    res = sb.table('journal_entries').insert(payload).execute()
+    if not res.data:
+        raise HTTPException(status_code=400, detail='Failed to save journal entry')
+    return res.data[0]
+
+
+@app.get('/dashboard')
+def dashboard_data():
     """
-    Screen all patients who have at least one survey and one journal entry.
-    Uses the most recent survey and journal entry per patient.
+    Single endpoint for the admin dashboard.
+    Returns all patients with their surveys, journals, and screening result.
+    Auto-screens patients that have sufficient data.
     """
-    patients = sb.table('patients').select('*').execute().data
+    patients = sb.table('patients').select('*').order('created_at', desc=True).execute().data
     surveys = sb.table('surveys').select('*').order('created_at', desc=True).execute().data
     journals = sb.table('journal_entries').select('*').order('created_at', desc=True).execute().data
 
-    # Index latest survey and journal per patient
-    latest_survey: dict = {}
+    # Group surveys and journals by patient
+    surveys_by_patient: dict[str, list] = {}
     for s in surveys:
         uid = s['from_user_id']
-        if uid not in latest_survey:
-            latest_survey[uid] = s
+        surveys_by_patient.setdefault(uid, []).append(s)
 
-    latest_journal: dict = {}
+    journals_by_patient: dict[str, list] = {}
     for j in journals:
         uid = j['from_user_id']
-        if uid not in latest_journal:
-            latest_journal[uid] = j
+        journals_by_patient.setdefault(uid, []).append(j)
 
-    results = []
-    skipped = 0
-
+    result = []
     for patient in patients:
         pid = patient['id']
-        survey = latest_survey.get(pid)
-        journal = latest_journal.get(pid)
+        p_surveys = surveys_by_patient.get(pid, [])
+        p_journals = journals_by_patient.get(pid, [])
 
-        if not survey or not journal:
-            skipped += 1
-            continue
+        # Screen if patient has at least one survey and one journal
+        screening = None
+        if p_surveys and p_journals:
+            latest_survey = p_surveys[0]
+            latest_journal = p_journals[0]
+            try:
+                features = build_feature_vector(patient, latest_survey, latest_journal['content'])
+                pred_label = int(model.predict(features)[0])
+                pred_proba = model.predict_proba(features)[0]
+                screening = {
+                    'predicted_level': LABEL_MAP[pred_label],
+                    'predicted_label': pred_label,
+                    'confidence': float(np.max(pred_proba)),
+                    'probabilities': {
+                        'low': float(pred_proba[0]),
+                        'moderate': float(pred_proba[1]),
+                        'high': float(pred_proba[2]),
+                    },
+                    'top_factors': [],
+                }
+                # SHAP computation (separate try so screening still works if SHAP fails)
+                try:
+                    screening['top_factors'] = _get_patient_shap(features, pred_label)
+                except Exception as e:
+                    print(f"SHAP error for patient {pid}: {e}")
+            except Exception as e:
+                print(f"Screening error for patient {pid}: {e}")
 
-        narrative = journal['content']
-        features = build_feature_vector(patient, survey, narrative)
+        result.append({
+            'patient': patient,
+            'surveys': p_surveys,
+            'journals': p_journals,
+            'screening': screening,
+        })
 
-        pred_label = int(model.predict(features)[0])
-        pred_proba = model.predict_proba(features)[0]
-
-        pred_level = LABEL_MAP[pred_label]
-        confidence = float(np.max(pred_proba))
-        probabilities = {
-            'low': float(pred_proba[0]),
-            'moderate': float(pred_proba[1]),
-            'high': float(pred_proba[2]),
-        }
-
-        # Save screening result
-        sb.table('screenings').insert({
-            'patient_id': pid,
-            'survey_id': survey['id'],
-            'journal_id': journal['id'],
-            'predicted_level': pred_level,
-            'predicted_label': pred_label,
-            'confidence': confidence,
-            'probabilities': probabilities,
-        }).execute()
-
-        results.append(ScreenResult(
-            patient_id=pid,
-            patient_name=patient.get('name', 'Unknown'),
-            predicted_level=pred_level,
-            predicted_label=pred_label,
-            confidence=confidence,
-            probabilities=probabilities,
-        ))
-
-    # Sort: high risk first
-    results.sort(key=lambda r: r.predicted_label, reverse=True)
-
-    return ScreenAllResponse(
-        results=results,
-        screened=len(results),
-        skipped=skipped,
-    )
-
-
-@app.get('/screenings')
-def list_screenings():
-    """List all past screening results."""
-    res = sb.table('screenings').select('*, patients(name)').order('created_at', desc=True).execute()
-    return res.data
+    return {
+        'patients': result,
+        'global_importance': _get_global_top_features(10),
+    }

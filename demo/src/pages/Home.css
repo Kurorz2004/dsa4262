@@ -1,6 +1,32 @@
 .home-header {
   text-align: center;
   margin-bottom: 32px;
+  position: relative;
+}
+
+.logout-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-height: auto;
+}
+
+.logout-btn:active {
+  background: var(--border);
+}
+
+.home-mascot {
+  margin-bottom: 8px;
 }
 
 .home-header h1 {
@@ -66,6 +92,15 @@
 .history-icon {
   background: var(--warning-light);
   color: var(--warning);
+}
+
+.streak-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.streak-mini {
+  margin-bottom: 8px;
 }
 
 .action-text h2 {

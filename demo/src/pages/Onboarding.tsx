@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import './Onboarding.css'
 
 const GENDER_OPTIONS = ['male', 'female', 'other']
@@ -17,7 +16,16 @@ const ABILITY_OPTIONS = ['poor', 'fair', 'good', 'very_good', 'excellent']
 const YES_NO = ['yes', 'no']
 const HEALTH_OPTIONS = ['poor', 'fair', 'good', 'very_good', 'excellent']
 const LIVING_OPTIONS = ['alone', 'with_spouse', 'with_family', 'with_others', 'care_facility']
-const RESIDENCY_OPTIONS = ['urban', 'suburban', 'rural']
+const RESIDENCY_OPTIONS = [
+  'central',
+  'east',
+  'north',
+  'north_east',
+  'north_west',
+  'south',
+  'west',
+]
+const LANGUAGE_OPTIONS = ['english', 'chinese', 'malay', 'tamil']
 
 interface Field {
   id: string
@@ -41,9 +49,10 @@ const FIELDS: Field[] = [
   { id: 'health', label: 'Overall Health', type: 'select', options: HEALTH_OPTIONS },
   { id: 'learning_disability', label: 'Learning Disability?', type: 'select', options: YES_NO },
   { id: 'living_arrangements', label: 'Living Arrangements', type: 'select', options: LIVING_OPTIONS },
-  { id: 'residency', label: 'Area Type', type: 'select', options: RESIDENCY_OPTIONS },
+  { id: 'residency', label: 'Region', type: 'select', options: RESIDENCY_OPTIONS },
   { id: 'num_friends', label: 'Number of Close Friends', type: 'number' },
   { id: 'num_household', label: 'Number of People in Household', type: 'number' },
+  { id: 'language', label: 'Preferred Language', type: 'select', options: LANGUAGE_OPTIONS, required: true },
 ]
 
 export default function Onboarding() {
@@ -57,8 +66,8 @@ export default function Onboarding() {
   }
 
   async function submit() {
-    if (!values.name?.trim() || !values.age) {
-      setError('Name and Age are required.')
+    if (!values.name?.trim() || !values.age || !values.language) {
+      setError('Name, Age, and Preferred Language are required.')
       return
     }
 
@@ -75,16 +84,17 @@ export default function Onboarding() {
     }
 
     try {
-      const { data, error: dbError } = await supabase
-        .from('patients')
-        .insert(row)
-        .select('id')
-        .single()
-
-      if (dbError) throw dbError
+      const res = await fetch('/api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+      })
+      if (!res.ok) throw new Error('Failed to save profile.')
+      const data = await res.json()
 
       localStorage.setItem('userId', data.id)
       localStorage.setItem('userName', values.name.trim())
+      localStorage.setItem('userLanguage', values.language || 'english')
       navigate('/')
     } catch (err: any) {
       setError(err.message || 'Failed to save profile.')
@@ -95,7 +105,10 @@ export default function Onboarding() {
 
   return (
     <div className="onboarding">
-      <h1>Welcome to MindWell</h1>
+      <div className="onboarding-mascot">
+        <img src="/mascot.svg" alt="GoldHaven mascot" width="100" height="100" />
+      </div>
+      <h1>Welcome to GoldHaven</h1>
       <p className="onboarding-subtitle">Let's set up your profile</p>
 
       <div className="onboarding-form">

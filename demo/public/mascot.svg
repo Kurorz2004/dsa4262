@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Body -->
+  <ellipse cx="60" cy="85" rx="30" ry="22" fill="#D4A03C"/>
+  <!-- Head -->
+  <circle cx="60" cy="48" r="28" fill="#E8B84B"/>
+  <!-- Ears -->
+  <ellipse cx="34" cy="38" rx="12" ry="18" fill="#C4922E" transform="rotate(-15 34 38)"/>
+  <ellipse cx="86" cy="38" rx="12" ry="18" fill="#C4922E" transform="rotate(15 86 38)"/>
+  <!-- Inner ears -->
+  <ellipse cx="35" cy="40" rx="7" ry="11" fill="#D4A03C" transform="rotate(-15 35 40)"/>
+  <ellipse cx="85" cy="40" rx="7" ry="11" fill="#D4A03C" transform="rotate(15 85 40)"/>
+  <!-- Eyes -->
+  <circle cx="48" cy="44" r="5" fill="#2C1810"/>
+  <circle cx="72" cy="44" r="5" fill="#2C1810"/>
+  <!-- Eye shine -->
+  <circle cx="50" cy="42" r="1.5" fill="white"/>
+  <circle cx="74" cy="42" r="1.5" fill="white"/>
+  <!-- Nose -->
+  <ellipse cx="60" cy="55" rx="5" ry="3.5" fill="#2C1810"/>
+  <!-- Mouth -->
+  <path d="M54 58 Q60 64 66 58" fill="none" stroke="#2C1810" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Tongue -->
+  <ellipse cx="60" cy="63" rx="4" ry="5" fill="#E8777D"/>
+  <!-- Chest patch -->
+  <ellipse cx="60" cy="78" rx="15" ry="12" fill="#F0CC6B"/>
+  <!-- Front paws -->
+  <ellipse cx="45" cy="104" rx="8" ry="5" fill="#E8B84B"/>
+  <ellipse cx="75" cy="104" rx="8" ry="5" fill="#E8B84B"/>
+  <!-- Tail -->
+  <path d="M90 80 Q105 65 98 55" fill="none" stroke="#D4A03C" stroke-width="7" stroke-linecap="round"/>
+</svg>

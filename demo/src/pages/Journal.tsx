@@ -1,7 +1,13 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import './Journal.css'
+
+const LANG_CODES: Record<string, string> = {
+  english: 'en-SG',
+  chinese: 'zh-CN',
+  malay: 'ms-MY',
+  tamil: 'ta-IN',
+}
 
 const MOODS = [
   { emoji: '\u{1F60A}', label: 'Happy' },
@@ -33,7 +39,8 @@ export default function Journal() {
     const recognition = new SpeechRecognition()
     recognition.continuous = true
     recognition.interimResults = true
-    recognition.lang = 'en-US'
+    const userLang = localStorage.getItem('userLanguage') || 'english'
+    recognition.lang = LANG_CODES[userLang] || 'en-SG'
 
     recognition.onresult = (event: any) => {
       let transcript = ''
@@ -70,12 +77,17 @@ export default function Journal() {
 
     setSaving(true)
     try {
-      await supabase.from('journal_entries').insert({
-        from_user_id: localStorage.getItem('userId') || '',
-        content: content.trim(),
-        input_method: inputMethod,
-        mood: mood || null,
+      const res = await fetch('/api/journals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_user_id: localStorage.getItem('userId') || '',
+          content: content.trim(),
+          input_method: inputMethod,
+          mood: mood || null,
+        }),
       })
+      if (!res.ok) throw new Error('Failed to save journal entry')
       setSaved(true)
     } catch (err) {
       console.error('Failed to save journal:', err)

@@ -3,27 +3,54 @@ import './Dashboard.css'
 
 const API = '/api'
 
-interface Patient {
-  id: string
-  name: string
-  age: number | null
-  gender: string | null
-  created_at: string
+interface PatientData {
+  patient: {
+    id: string
+    name: string
+    age: number | null
+    gender: string | null
+    education: string | null
+    years_education: number | null
+    read_ability: string | null
+    write_ability: string | null
+    retired: string | null
+    employed: string | null
+    volunteer: string | null
+    health: string | null
+    learning_disability: string | null
+    living_arrangements: string | null
+    residency: string | null
+    num_friends: number | null
+    num_household: number | null
+    language: string | null
+    created_at: string
+  }
+  surveys: Record<string, string | number | undefined>[]
+  journals: {
+    id: string
+    created_at: string
+    content: string
+    input_method: string
+    mood: string | null
+  }[]
+  screening: {
+    predicted_level: string
+    predicted_label: number
+    confidence: number
+    probabilities: { low: number; moderate: number; high: number }
+    top_factors: {
+      feature: string
+      label: string
+      shap_value: number
+      direction: string
+    }[]
+  } | null
 }
 
-interface ScreenResult {
-  patient_id: string
-  patient_name: string
-  predicted_level: string
-  predicted_label: number
-  confidence: number
-  probabilities: { low: number; moderate: number; high: number }
-}
-
-interface ScreenResponse {
-  results: ScreenResult[]
-  screened: number
-  skipped: number
+interface GlobalFeature {
+  feature: string
+  label: string
+  importance: number
 }
 
 const LEVEL_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
@@ -32,140 +59,291 @@ const LEVEL_CONFIG: Record<string, { color: string; bg: string; label: string }>
   low: { color: '#16a34a', bg: '#dcfce7', label: 'Low Risk' },
 }
 
+const PROFILE_FIELDS: [string, string][] = [
+  ['age', 'Age'],
+  ['gender', 'Gender'],
+  ['education', 'Education'],
+  ['years_education', 'Years of Education'],
+  ['read_ability', 'Reading Ability'],
+  ['write_ability', 'Writing Ability'],
+  ['retired', 'Retired'],
+  ['employed', 'Employed'],
+  ['volunteer', 'Volunteers'],
+  ['health', 'Health'],
+  ['learning_disability', 'Learning Disability'],
+  ['living_arrangements', 'Living Arrangements'],
+  ['residency', 'Region'],
+  ['num_friends', 'Close Friends'],
+  ['num_household', 'Household Size'],
+  ['language', 'Language'],
+]
+
+const SURVEY_FIELDS: [string, string][] = [
+  ['speak_habit', 'Speaking (hrs/wk)'],
+  ['read_print_habit', 'Reading print (hrs/wk)'],
+  ['read_web_habit', 'Reading online (hrs/wk)'],
+  ['broadcast_habit', 'TV/Radio (hrs/wk)'],
+  ['social_meet_freq', 'Social meetups'],
+  ['professional_meet_freq', 'Professional meetups'],
+  ['volunteer_meet_freq', 'Volunteer activities'],
+  ['talk_social_network', 'Social media use'],
+  ['divulge_family', 'Share with family'],
+  ['rely_family', 'Rely on family'],
+  ['divulge_friend', 'Share with friends'],
+  ['rely_friend', 'Rely on friends'],
+  ['divulge_spouse', 'Share with spouse'],
+  ['rely_spouse', 'Rely on spouse'],
+]
+
+function fmt(val: unknown): string {
+  if (val == null) return '-'
+  return String(val).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export default function Dashboard() {
-  const [patients, setPatients] = useState<Patient[]>([])
-  const [results, setResults] = useState<ScreenResult[] | null>(null)
-  const [screening, setScreening] = useState(false)
+  const [data, setData] = useState<PatientData[]>([])
+  const [globalImportance, setGlobalImportance] = useState<GlobalFeature[]>([])
   const [loading, setLoading] = useState(true)
-  const [screenInfo, setScreenInfo] = useState<{ screened: number; skipped: number } | null>(null)
   const [error, setError] = useState('')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [tab, setTab] = useState<Record<string, 'profile' | 'surveys' | 'journals'>>({})
 
   useEffect(() => {
-    loadPatients()
+    loadDashboard()
   }, [])
 
-  async function loadPatients() {
+  async function loadDashboard() {
     setLoading(true)
+    setError('')
     try {
-      const res = await fetch(`${API}/patients`)
-      const data = await res.json()
-      setPatients(data)
-    } catch (err) {
-      setError('Failed to load patients. Is the backend running?')
+      const res = await fetch(`${API}/dashboard`)
+      if (!res.ok) throw new Error(`Server error: ${res.status}`)
+      const json = await res.json()
+      setData(json.patients)
+      setGlobalImportance(json.global_importance)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load. Is the backend running?')
     } finally {
       setLoading(false)
     }
   }
 
-  async function runScreening() {
-    setScreening(true)
-    setError('')
-    setResults(null)
-    try {
-      const res = await fetch(`${API}/screen`, { method: 'POST' })
-      if (!res.ok) throw new Error(`Server error: ${res.status}`)
-      const data: ScreenResponse = await res.json()
-      setResults(data.results)
-      setScreenInfo({ screened: data.screened, skipped: data.skipped })
-    } catch (err: any) {
-      setError(err.message || 'Screening failed.')
-    } finally {
-      setScreening(false)
-    }
+  function toggle(id: string) {
+    setExpanded(expanded === id ? null : id)
+    if (!tab[id]) setTab((prev) => ({ ...prev, [id]: 'profile' }))
+  }
+
+  function setPatientTab(id: string, t: 'profile' | 'surveys' | 'journals') {
+    setTab((prev) => ({ ...prev, [id]: t }))
+  }
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <header className="dashboard-header">
+          <h1>GoldHaven Admin</h1>
+        </header>
+        <p className="loading-text">Loading and screening patients...</p>
+      </div>
+    )
   }
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <div>
-          <h1>MindWell Admin</h1>
-          <p className="subtitle">Caregiver Dashboard</p>
+          <h1>GoldHaven Admin</h1>
+          <p className="subtitle">
+            {data.length} patient{data.length !== 1 ? 's' : ''} registered
+            {' \u00B7 '}
+            {data.filter((d) => d.screening).length} screened
+          </p>
         </div>
-        <button className="btn-primary" onClick={runScreening} disabled={screening}>
-          {screening ? 'Screening...' : 'Run Screening'}
+        <button className="btn-secondary refresh-btn" onClick={loadDashboard}>
+          Refresh
         </button>
       </header>
 
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Screening Results */}
-      {results && (
-        <section className="results-section">
-          <div className="results-header">
-            <h2>Screening Results</h2>
-            <span className="results-meta">
-              {screenInfo?.screened} screened, {screenInfo?.skipped} skipped (missing data)
-            </span>
-          </div>
-
-          {results.length === 0 ? (
-            <div className="card empty">
-              No patients with both survey and journal data to screen.
-            </div>
-          ) : (
-            <div className="results-grid">
-              {results.map((r) => {
-                const cfg = LEVEL_CONFIG[r.predicted_level] || LEVEL_CONFIG.low
-                return (
-                  <div key={r.patient_id} className="result-card card">
-                    <div className="result-top">
-                      <div>
-                        <h3>{r.patient_name}</h3>
-                        <span className="patient-id">{r.patient_id.slice(0, 8)}...</span>
-                      </div>
-                      <span
-                        className="risk-badge"
-                        style={{ color: cfg.color, background: cfg.bg }}
-                      >
-                        {cfg.label}
-                      </span>
-                    </div>
-                    <div className="probabilities">
-                      <ProbBar label="Low" value={r.probabilities.low} color="#16a34a" />
-                      <ProbBar label="Moderate" value={r.probabilities.moderate} color="#f59e0b" />
-                      <ProbBar label="High" value={r.probabilities.high} color="#dc2626" />
-                    </div>
-                    <div className="confidence">
-                      Confidence: {(r.confidence * 100).toFixed(1)}%
-                    </div>
+      {/* Global Feature Importance */}
+      {globalImportance.length > 0 && (
+        <section className="global-importance card">
+          <h2>Top Factors Influencing Risk (All Patients)</h2>
+          <div className="importance-bars">
+            {globalImportance.map((f) => {
+              const maxImp = globalImportance[0].importance
+              return (
+                <div key={f.feature} className="importance-row">
+                  <span className="importance-label">{f.label}</span>
+                  <div className="importance-track">
+                    <div
+                      className="importance-fill"
+                      style={{ width: `${(f.importance / maxImp) * 100}%` }}
+                    />
                   </div>
-                )
-              })}
-            </div>
-          )}
+                  <span className="importance-value">{(f.importance * 100).toFixed(1)}%</span>
+                </div>
+              )
+            })}
+          </div>
         </section>
       )}
 
-      {/* Patient List */}
-      <section className="patients-section">
-        <h2>Registered Patients ({patients.length})</h2>
-        {loading ? (
-          <p className="loading-text">Loading...</p>
-        ) : patients.length === 0 ? (
-          <div className="card empty">No patients registered yet.</div>
-        ) : (
-          <table className="patients-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Registered</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patients.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name}</td>
-                  <td>{p.age ?? '-'}</td>
-                  <td>{p.gender ?? '-'}</td>
-                  <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <div className="patient-list">
+        {data.map((d) => {
+          const p = d.patient
+          const s = d.screening
+          const cfg = s ? LEVEL_CONFIG[s.predicted_level] || LEVEL_CONFIG.low : null
+          const isOpen = expanded === p.id
+          const activeTab = tab[p.id] || 'profile'
+
+          return (
+            <div key={p.id} className={`patient-card card ${isOpen ? 'open' : ''}`}>
+              {/* Header — always visible */}
+              <button className="patient-header" onClick={() => toggle(p.id)}>
+                <div className="patient-info">
+                  <h3>{p.name}</h3>
+                  <span className="patient-meta">
+                    {p.age ?? '?'} yrs, {fmt(p.gender)} &middot; Registered {new Date(p.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="patient-header-right">
+                  {cfg ? (
+                    <span className="risk-badge" style={{ color: cfg.color, background: cfg.bg }}>
+                      {cfg.label}
+                    </span>
+                  ) : (
+                    <span className="risk-badge no-data">No Data</span>
+                  )}
+                  <span className="chevron">{isOpen ? '\u25B2' : '\u25BC'}</span>
+                </div>
+              </button>
+
+              {/* Expanded content */}
+              {isOpen && (
+                <div className="patient-body">
+                  {/* Risk bar (if screened) */}
+                  {s && (
+                    <div className="risk-summary">
+                      <ProbBar label="Low" value={s.probabilities.low} color="#16a34a" />
+                      <ProbBar label="Moderate" value={s.probabilities.moderate} color="#f59e0b" />
+                      <ProbBar label="High" value={s.probabilities.high} color="#dc2626" />
+                      <div className="confidence">Confidence: {(s.confidence * 100).toFixed(1)}%</div>
+
+                      {s.top_factors && s.top_factors.length > 0 && (
+                        <div className="patient-factors">
+                          <h4>Key Factors for This Patient</h4>
+                          <div className="factors-list">
+                            {s.top_factors.map((f) => (
+                              <div key={f.feature} className="factor-row">
+                                <span className="factor-label">{f.label}</span>
+                                <span className={`factor-direction ${f.shap_value > 0 ? 'risk-up' : 'risk-down'}`}>
+                                  {f.shap_value > 0 ? '\u2191' : '\u2193'} {f.direction}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tabs */}
+                  <div className="detail-tabs">
+                    <button
+                      className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+                      onClick={() => setPatientTab(p.id, 'profile')}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      className={`tab-btn ${activeTab === 'surveys' ? 'active' : ''}`}
+                      onClick={() => setPatientTab(p.id, 'surveys')}
+                    >
+                      Surveys ({d.surveys.length})
+                    </button>
+                    <button
+                      className={`tab-btn ${activeTab === 'journals' ? 'active' : ''}`}
+                      onClick={() => setPatientTab(p.id, 'journals')}
+                    >
+                      Journals ({d.journals.length})
+                    </button>
+                  </div>
+
+                  {/* Tab content */}
+                  <div className="tab-content">
+                    {activeTab === 'profile' && (
+                      <div className="profile-grid">
+                        {PROFILE_FIELDS.map(([key, label]) => (
+                          <div key={key} className="profile-field">
+                            <span className="field-label">{label}</span>
+                            <span className="field-value">{fmt((p as any)[key])}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeTab === 'surveys' && (
+                      d.surveys.length === 0 ? (
+                        <p className="empty-text">No surveys submitted yet.</p>
+                      ) : (
+                        <div className="items-list">
+                          {d.surveys.map((sv, idx) => (
+                            <div key={sv.id as string} className="item-card">
+                              <div className="item-header">
+                                <strong>Survey {d.surveys.length - idx}</strong>
+                                <span className="item-date">
+                                  {new Date(sv.created_at as string).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="survey-grid">
+                                {SURVEY_FIELDS.map(([key, label]) => (
+                                  <div key={key} className="survey-field">
+                                    <span className="field-label">{label}</span>
+                                    <span className="field-value">
+                                      {typeof sv[key] === 'number' ? sv[key] : fmt(sv[key])}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+
+                    {activeTab === 'journals' && (
+                      d.journals.length === 0 ? (
+                        <p className="empty-text">No journal entries yet.</p>
+                      ) : (
+                        <div className="items-list">
+                          {d.journals.map((j) => (
+                            <div key={j.id} className="item-card journal-item">
+                              <div className="item-header">
+                                <span className="item-date">
+                                  {new Date(j.created_at).toLocaleString()}
+                                </span>
+                                <div className="journal-tags">
+                                  {j.mood && <span className="journal-tag mood">{j.mood}</span>}
+                                  <span className="journal-tag method">
+                                    {j.input_method === 'voice' ? 'Voice' : 'Text'}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="journal-content">{j.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

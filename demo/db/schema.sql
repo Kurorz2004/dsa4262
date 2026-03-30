@@ -20,7 +20,8 @@ create table if not exists patients (
   living_arrangements text,
   residency text,
   num_friends integer,
-  num_household integer
+  num_household integer,
+  language text default 'english'
 );
 
 -- Recurring behavioural survey responses

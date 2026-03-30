@@ -2,6 +2,11 @@
   padding: 24px 16px 40px;
 }
 
+.onboarding-mascot {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
 .onboarding h1 {
   text-align: center;
   margin-bottom: 4px;
