@@ -27,8 +27,8 @@ dsa4262/
 │   │   └── types/                # TypeScript interfaces
 │   ├── admin/                    # Admin/caregiver app (React + Vite, port 5174)
 │   │   └── src/pages/            # Dashboard with screening
-│   ├── backend/                  # FastAPI inference API (port 8000)
-│   │   └── main.py              # /patients, /screen, /screenings endpoints
+│   ├── backend/                  # FastAPI API (port 8000)
+│   │   └── main.py               # Write endpoints + screening inference
 │   └── db/
 │       └── schema.sql            # Supabase table definitions
 ├── model/
