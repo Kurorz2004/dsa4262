@@ -1,4 +1,4 @@
-sentence_transformer=all-MiniLM-L6-v2
-n_behavioural_features=81
+sentence_transformer=paraphrase-multilingual-MiniLM-L12-v2
+n_behavioural_features=80
 n_nlp_features=384
 label_map=1:low,2:moderate,3:high
