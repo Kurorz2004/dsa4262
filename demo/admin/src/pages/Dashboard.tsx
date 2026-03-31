@@ -47,16 +47,10 @@ interface PatientData {
   } | null
 }
 
-interface GlobalFeature {
-  feature: string
-  label: string
-  importance: number
-}
-
-const LEVEL_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  high: { color: '#dc2626', bg: '#fee2e2', label: 'High Risk' },
-  moderate: { color: '#f59e0b', bg: '#fef3c7', label: 'Moderate Risk' },
-  low: { color: '#16a34a', bg: '#dcfce7', label: 'Low Risk' },
+const LEVEL_CONFIG: Record<string, { color: string; bg: string; label: string; order: number }> = {
+  high: { color: '#dc2626', bg: '#fee2e2', label: 'High Risk', order: 0 },
+  moderate: { color: '#f59e0b', bg: '#fef3c7', label: 'Moderate Risk', order: 1 },
+  low: { color: '#16a34a', bg: '#dcfce7', label: 'Low Risk', order: 2 },
 }
 
 const PROFILE_FIELDS: [string, string][] = [
@@ -100,9 +94,20 @@ function fmt(val: unknown): string {
   return String(val).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function sortByRisk(patients: PatientData[]): PatientData[] {
+  return [...patients].sort((a, b) => {
+    const aOrder = a.screening ? (LEVEL_CONFIG[a.screening.predicted_level]?.order ?? 3) : 4
+    const bOrder = b.screening ? (LEVEL_CONFIG[b.screening.predicted_level]?.order ?? 3) : 4
+    if (aOrder !== bOrder) return aOrder - bOrder
+    // Within same risk level, sort by confidence descending
+    const aConf = a.screening?.confidence ?? 0
+    const bConf = b.screening?.confidence ?? 0
+    return bConf - aConf
+  })
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<PatientData[]>([])
-  const [globalImportance, setGlobalImportance] = useState<GlobalFeature[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -119,8 +124,7 @@ export default function Dashboard() {
       const res = await fetch(`${API}/dashboard`)
       if (!res.ok) throw new Error(`Server error: ${res.status}`)
       const json = await res.json()
-      setData(json.patients)
-      setGlobalImportance(json.global_importance)
+      setData(sortByRisk(json.patients))
     } catch (err: any) {
       setError(err.message || 'Failed to load. Is the backend running?')
     } finally {
@@ -148,6 +152,11 @@ export default function Dashboard() {
     )
   }
 
+  const screened = data.filter((d) => d.screening)
+  const highCount = screened.filter((d) => d.screening?.predicted_level === 'high').length
+  const modCount = screened.filter((d) => d.screening?.predicted_level === 'moderate').length
+  const lowCount = screened.filter((d) => d.screening?.predicted_level === 'low').length
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -156,7 +165,7 @@ export default function Dashboard() {
           <p className="subtitle">
             {data.length} patient{data.length !== 1 ? 's' : ''} registered
             {' \u00B7 '}
-            {data.filter((d) => d.screening).length} screened
+            {screened.length} screened
           </p>
         </div>
         <button className="btn-secondary refresh-btn" onClick={loadDashboard}>
@@ -166,28 +175,22 @@ export default function Dashboard() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Global Feature Importance */}
-      {globalImportance.length > 0 && (
-        <section className="global-importance card">
-          <h2>Top Factors Influencing Risk (All Patients)</h2>
-          <div className="importance-bars">
-            {globalImportance.map((f) => {
-              const maxImp = globalImportance[0].importance
-              return (
-                <div key={f.feature} className="importance-row">
-                  <span className="importance-label">{f.label}</span>
-                  <div className="importance-track">
-                    <div
-                      className="importance-fill"
-                      style={{ width: `${(f.importance / maxImp) * 100}%` }}
-                    />
-                  </div>
-                  <span className="importance-value">{(f.importance * 100).toFixed(1)}%</span>
-                </div>
-              )
-            })}
+      {/* Risk summary counts */}
+      {screened.length > 0 && (
+        <div className="risk-counts">
+          <div className="risk-count high">
+            <span className="risk-count-num">{highCount}</span>
+            <span className="risk-count-label">High Risk</span>
           </div>
-        </section>
+          <div className="risk-count moderate">
+            <span className="risk-count-num">{modCount}</span>
+            <span className="risk-count-label">Moderate</span>
+          </div>
+          <div className="risk-count low">
+            <span className="risk-count-num">{lowCount}</span>
+            <span className="risk-count-label">Low Risk</span>
+          </div>
+        </div>
       )}
 
       <div className="patient-list">

@@ -7,6 +7,8 @@ import Survey from './pages/Survey'
 import Journal from './pages/Journal'
 import History from './pages/History'
 import Streak from './pages/Streak'
+import Events from './pages/Events'
+import Resources from './pages/Resources'
 
 function RequireProfile({ children }: { children: React.ReactNode }) {
   const userId = localStorage.getItem('userId')
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="journal" element={<Journal />} />
           <Route path="history" element={<History />} />
           <Route path="streak" element={<Streak />} />
+          <Route path="events" element={<Events />} />
+          <Route path="resources" element={<Resources />} />
         </Route>
       </Routes>
     </BrowserRouter>

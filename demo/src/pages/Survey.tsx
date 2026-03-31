@@ -149,7 +149,6 @@ const QUESTIONS: SurveyQuestion[] = [
     text: 'How often do you share personal matters with your spouse or partner?',
     type: 'select',
     options: [
-      { label: 'N/A (no spouse or partner)', value: 'never' },
       { label: 'Never', value: 'never' },
       { label: 'Hardly ever', value: 'hardly_ever' },
       { label: 'Some of the time', value: 'some_of_the_time' },
@@ -161,7 +160,6 @@ const QUESTIONS: SurveyQuestion[] = [
     text: 'How often can you rely on your spouse or partner for help?',
     type: 'select',
     options: [
-      { label: 'N/A (no spouse or partner)', value: 'never' },
       { label: 'Never', value: 'never' },
       { label: 'Hardly ever', value: 'hardly_ever' },
       { label: 'Some of the time', value: 'some_of_the_time' },

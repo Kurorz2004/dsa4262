@@ -1,0 +1,184 @@
+.resources {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resources h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0;
+}
+
+.resources-intro {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Emergency banner */
+.emergency-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--danger-light) !important;
+  border-color: var(--danger) !important;
+}
+
+.emergency-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.emergency-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.emergency-text strong {
+  font-size: 0.95rem;
+  color: var(--danger);
+}
+
+.emergency-text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Helplines section */
+.helplines-section,
+.resources-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.helplines-section h2,
+.resources-section h2 {
+  font-size: 1.1rem;
+}
+
+.helpline-list,
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Helpline card */
+.helpline-card {
+  padding: 16px;
+}
+
+.helpline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.helpline-header h3 {
+  font-size: 1rem;
+}
+
+.helpline-card .listen-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.helpline-number {
+  display: inline-block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  margin-bottom: 4px;
+  padding: 6px 16px;
+  background: var(--primary-light);
+  border-radius: 10px;
+}
+
+.helpline-number:active {
+  opacity: 0.8;
+}
+
+.helpline-hours {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 8px;
+}
+
+.helpline-desc {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.helpline-langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lang-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* Resource card */
+.resource-card {
+  display: block;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.resource-card:active {
+  background: var(--bg);
+}
+
+.resource-card h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.resource-card p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.resource-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+}

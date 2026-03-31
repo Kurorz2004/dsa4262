@@ -80,7 +80,7 @@ export default function Home() {
       </div>
 
       {/* Streak mini-card */}
-      <button className="streak-mini action-card" onClick={() => navigate('/streak')}>
+      <button className="streak-mini action-card" onClick={() => navigate('/events')}>
         <div className="action-icon streak-icon">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -91,7 +91,7 @@ export default function Home() {
         </div>
         <div className="action-text">
           <h2>{currentStreak}-day streak</h2>
-          <p>Tap to view your calendar and progress</p>
+          <p>View your streak, events & activities</p>
         </div>
       </button>
 
@@ -119,6 +119,18 @@ export default function Home() {
           <div className="action-text">
             <h2>Daily Journal</h2>
             <p>Write or speak your thoughts</p>
+          </div>
+        </button>
+
+        <button className="action-card" onClick={() => navigate('/resources')}>
+          <div className="action-icon resources-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div className="action-text">
+            <h2>Mental Health Help</h2>
+            <p>Helplines and support resources</p>
           </div>
         </button>
 

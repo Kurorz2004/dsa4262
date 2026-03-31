@@ -41,12 +41,6 @@ LABEL_MAP = {1: 'low', 2: 'moderate', 3: 'high'}
 # ---------------------------------------------------------------------------
 explainer = shap.TreeExplainer(model)
 
-# Global feature importance from the trained model
-_global_importance = pd.Series(model.feature_importances_, index=feature_columns)
-# Exclude embedding features from the global ranking (not interpretable)
-_behav_importance = _global_importance[[c for c in feature_columns if not c.startswith('emb_')]]
-_behav_importance = _behav_importance.sort_values(ascending=False)
-
 # Readable names for one-hot encoded features
 def _readable_feature(name: str) -> str:
     """Convert feature column names to human-readable labels.
@@ -111,33 +105,37 @@ def _readable_feature(name: str) -> str:
     return name.replace('_', ' ').title()
 
 
-def _get_global_top_features(n: int = 10) -> list[dict]:
-    """Return top N global behavioural feature importances."""
-    top = _behav_importance.head(n)
-    result = []
-    for feat, imp in top.items():
-        label = _readable_feature(str(feat))
-        result.append({'feature': str(feat), 'label': label, 'importance': round(float(imp), 4)})
-    return result
 
+def _get_patient_shap(features: pd.DataFrame, raw_features: pd.DataFrame, n: int = 5) -> list[dict]:
+    """Return top N SHAP-based contributing features for a single patient.
 
-def _get_patient_shap(features: pd.DataFrame, predicted_class: int, n: int = 5) -> list[dict]:
-    """Return top N SHAP-based contributing features for a single patient's predicted class."""
+    Always uses SHAP values for the HIGH-risk class (label 3, index 2)
+    so that positive = increases loneliness risk, negative = decreases risk,
+    regardless of which class was predicted.
+
+    Only considers features where the patient has a non-zero raw value,
+    so we never show e.g. "Rely on Spouse = often" when the patient answered "never".
+    """
+    HIGH_RISK_IDX = 2  # class label 3 → index 2
+
     sv = explainer.shap_values(features)
 
     # Handle different shap return formats:
     # - List of arrays (one per class): sv[class_idx][sample_idx]
     # - Single 3D array: sv[sample_idx, feature_idx, class_idx]
     if isinstance(sv, list):
-        class_shap = np.array(sv[predicted_class - 1]).flatten()
+        class_shap = np.array(sv[HIGH_RISK_IDX]).flatten()
     elif isinstance(sv, np.ndarray) and sv.ndim == 3:
-        class_shap = sv[0, :, predicted_class - 1]
+        class_shap = sv[0, :, HIGH_RISK_IDX]
     else:
         # Fallback: flatten whatever we get
         class_shap = np.array(sv).flatten()
 
-    # Only consider behavioural features (not embeddings)
-    behav_indices = [i for i, c in enumerate(feature_columns) if not c.startswith('emb_')]
+    raw_vals = raw_features.iloc[0]
+
+    # Only consider behavioural features that the patient actually has (non-zero raw value)
+    behav_indices = [i for i, c in enumerate(feature_columns)
+                     if not c.startswith('emb_') and raw_vals.iloc[i] != 0]
     shap_pairs = [(feature_columns[i], class_shap[i]) for i in behav_indices]
     # Sort by absolute SHAP value (most impactful first)
     shap_pairs.sort(key=lambda x: abs(x[1]), reverse=True)
@@ -171,10 +169,13 @@ app.add_middleware(
 )
 
 
-def build_feature_vector(patient: dict, survey: dict, narrative: str) -> pd.DataFrame:
+def build_feature_vector(patient: dict, survey: dict, narrative: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Combine patient profile + survey answers + narrative embedding
     into a single feature row matching the training feature columns.
+
+    Returns (scaled_features, raw_features) — both aligned to training columns.
+    raw_features is needed to know which one-hot features the patient actually has.
     """
     # --- Behavioural features ---
     row = {}
@@ -199,7 +200,7 @@ def build_feature_vector(patient: dict, survey: dict, narrative: str) -> pd.Data
         row[col] = survey.get(col)
 
     behav_df = pd.DataFrame([row])
-    behav_df = pd.get_dummies(behav_df, drop_first=True)
+    behav_df = pd.get_dummies(behav_df)
 
     # --- NLP embedding ---
     embedding = st_model.encode([narrative])[0]
@@ -215,13 +216,16 @@ def build_feature_vector(patient: dict, survey: dict, narrative: str) -> pd.Data
             combined[col] = 0
     combined = combined[feature_columns]
 
+    # Keep raw (unscaled) copy for SHAP factor filtering
+    raw = combined.copy()
+
     # Scale
-    combined = pd.DataFrame(
+    scaled = pd.DataFrame(
         scaler.transform(combined),
         columns=feature_columns,
     )
 
-    return combined
+    return scaled, raw
 
 
 @app.get('/patients')
@@ -324,7 +328,7 @@ def dashboard_data():
             latest_survey = p_surveys[0]
             latest_journal = p_journals[0]
             try:
-                features = build_feature_vector(patient, latest_survey, latest_journal['content'])
+                features, raw_features = build_feature_vector(patient, latest_survey, latest_journal['content'])
                 pred_label = int(model.predict(features)[0])
                 pred_proba = model.predict_proba(features)[0]
                 screening = {
@@ -340,7 +344,7 @@ def dashboard_data():
                 }
                 # SHAP computation (separate try so screening still works if SHAP fails)
                 try:
-                    screening['top_factors'] = _get_patient_shap(features, pred_label)
+                    screening['top_factors'] = _get_patient_shap(features, raw_features)
                 except Exception as e:
                     print(f"SHAP error for patient {pid}: {e}")
             except Exception as e:
@@ -355,5 +359,4 @@ def dashboard_data():
 
     return {
         'patients': result,
-        'global_importance': _get_global_top_features(10),
     }

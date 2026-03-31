@@ -89,6 +89,11 @@
   color: var(--success);
 }
 
+.resources-icon {
+  background: #fce7f3;
+  color: #db2777;
+}
+
 .history-icon {
   background: var(--warning-light);
   color: var(--warning);
