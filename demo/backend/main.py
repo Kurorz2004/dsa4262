@@ -242,13 +242,6 @@ def get_patient_surveys(patient_id: str):
     return res.data
 
 
-@app.get('/patients/{patient_id}/journals')
-def get_patient_journals(patient_id: str):
-    """Get all journal entries for a specific patient, newest first."""
-    res = sb.table('journal_entries').select('*').eq('from_user_id', patient_id).order('created_at', desc=True).execute()
-    return res.data
-
-
 @app.get('/patients/{patient_id}/details')
 def get_patient_details(patient_id: str):
     """Get a single patient's full profile."""
@@ -298,7 +291,7 @@ def create_journal(payload: dict):
 def dashboard_data():
     """
     Single endpoint for the admin dashboard.
-    Returns all patients with their surveys, journals, and screening result.
+    Returns all patients with their surveys and screening result.
     Auto-screens patients that have sufficient data.
     """
     patients = sb.table('patients').select('*').order('created_at', desc=True).execute().data
@@ -353,7 +346,6 @@ def dashboard_data():
         result.append({
             'patient': patient,
             'surveys': p_surveys,
-            'journals': p_journals,
             'screening': screening,
         })
 

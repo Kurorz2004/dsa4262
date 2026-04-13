@@ -26,13 +26,6 @@ interface PatientData {
     created_at: string
   }
   surveys: Record<string, string | number | undefined>[]
-  journals: {
-    id: string
-    created_at: string
-    content: string
-    input_method: string
-    mood: string | null
-  }[]
   screening: {
     predicted_level: string
     predicted_label: number
@@ -111,7 +104,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [tab, setTab] = useState<Record<string, 'profile' | 'surveys' | 'journals'>>({})
+  const [tab, setTab] = useState<Record<string, 'profile' | 'surveys'>>({})
 
   useEffect(() => {
     loadDashboard()
@@ -137,7 +130,7 @@ export default function Dashboard() {
     if (!tab[id]) setTab((prev) => ({ ...prev, [id]: 'profile' }))
   }
 
-  function setPatientTab(id: string, t: 'profile' | 'surveys' | 'journals') {
+  function setPatientTab(id: string, t: 'profile' | 'surveys') {
     setTab((prev) => ({ ...prev, [id]: t }))
   }
 
@@ -266,12 +259,6 @@ export default function Dashboard() {
                     >
                       Surveys ({d.surveys.length})
                     </button>
-                    <button
-                      className={`tab-btn ${activeTab === 'journals' ? 'active' : ''}`}
-                      onClick={() => setPatientTab(p.id, 'journals')}
-                    >
-                      Journals ({d.journals.length})
-                    </button>
                   </div>
 
                   {/* Tab content */}
@@ -316,30 +303,6 @@ export default function Dashboard() {
                       )
                     )}
 
-                    {activeTab === 'journals' && (
-                      d.journals.length === 0 ? (
-                        <p className="empty-text">No journal entries yet.</p>
-                      ) : (
-                        <div className="items-list">
-                          {d.journals.map((j) => (
-                            <div key={j.id} className="item-card journal-item">
-                              <div className="item-header">
-                                <span className="item-date">
-                                  {new Date(j.created_at).toLocaleString()}
-                                </span>
-                                <div className="journal-tags">
-                                  {j.mood && <span className="journal-tag mood">{j.mood}</span>}
-                                  <span className="journal-tag method">
-                                    {j.input_method === 'voice' ? 'Voice' : 'Text'}
-                                  </span>
-                                </div>
-                              </div>
-                              <p className="journal-content">{j.content}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    )}
                   </div>
                 </div>
               )}

@@ -335,7 +335,7 @@
   text-align: right;
 }
 
-/* Survey + journal items */
+/* Survey items */
 .items-list {
   display: flex;
   flex-direction: column;
@@ -381,31 +381,3 @@
   border-bottom: none;
 }
 
-/* Journal items */
-.journal-tags {
-  display: flex;
-  gap: 6px;
-}
-
-.journal-tag {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.journal-tag.mood {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.journal-tag.method {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.journal-content {
-  font-size: 0.85rem;
-  line-height: 1.6;
-  color: var(--text);
-}
