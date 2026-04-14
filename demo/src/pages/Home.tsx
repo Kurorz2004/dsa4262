@@ -129,7 +129,7 @@ export default function Home() {
             </svg>
           </div>
           <div className="action-text">
-            <h2>Mental Health Help</h2>
+            <h2>Mental Health Resources</h2>
             <p>Helplines and support resources</p>
           </div>
         </button>
