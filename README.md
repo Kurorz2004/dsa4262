@@ -35,7 +35,8 @@ dsa4262/
 │   ├── notebooks/
 │   │   └── combined.ipynb        # Combined model (behavioural + NLP)
 │   └── artifacts/                # Exported model files (after training)
-└── cosowell_data.zip             # COSOWELL dataset
+├── EDA Final version.ipynb       # Exploratory Data Analysis on CoSoWELL dataset
+└── cosowell_data.zip             # CoSoWELL dataset
 ```
 
 ## Getting Started
